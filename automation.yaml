@@ -1,6 +1,6 @@
 id: "1785271726793"
 alias: "Air Quality Status Monitor"
-description: "Monitors Awair air quality scores across Bedroom, Living Room, and Office, with stateful hysteresis notifications (<50 degraded, >70 restored) and visual shelf light cues."
+description: "Monitors Awair air quality scores across Bedroom, Living Room, and Office, with stateful hysteresis notifications (<50 degraded, <40 severe fan boost, >70 restored), shelf light alerts, and automatic fan circulation."
 mode: queued
 max: 10
 triggers:
@@ -9,6 +9,11 @@ triggers:
       - sensor.bedroom_awair_score
     id: bedroom_bad
     below: 50
+  - trigger: numeric_state
+    entity_id:
+      - sensor.bedroom_awair_score
+    id: bedroom_severe
+    below: 40
   - trigger: numeric_state
     entity_id:
       - sensor.bedroom_awair_score
@@ -22,6 +27,11 @@ triggers:
   - trigger: numeric_state
     entity_id:
       - sensor.awair_awair_score
+    id: living_room_severe
+    below: 40
+  - trigger: numeric_state
+    entity_id:
+      - sensor.awair_awair_score
     id: living_room_good
     above: 70
   - trigger: numeric_state
@@ -29,6 +39,11 @@ triggers:
       - sensor.office_awair_score
     id: office_bad
     below: 50
+  - trigger: numeric_state
+    entity_id:
+      - sensor.office_awair_score
+    id: office_severe
+    below: 40
   - trigger: numeric_state
     entity_id:
       - sensor.office_awair_score
@@ -48,6 +63,24 @@ actions:
             data:
               title: "🌬️ Air Quality Alert: Bedroom"
               message: "Bedroom air quality is degraded (Awair score dropped below 50)."
+      - conditions:
+          - condition: trigger
+            id:
+              - bedroom_severe
+        sequence:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.bedroom_air_quality_alert
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.bedroom_air_quality_fan_boost
+          - action: fan.turn_on
+            target:
+              entity_id: fan.bedroom_fan_and_light
+          - action: notify.notify
+            data:
+              title: "🚨 Air Quality Severe: Bedroom"
+              message: "Bedroom air quality dropped below 40! Bedroom Fan turned ON to circulate air."
       - conditions:
           - condition: trigger
             id:
@@ -72,6 +105,24 @@ actions:
       - conditions:
           - condition: trigger
             id:
+              - living_room_severe
+        sequence:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.living_room_air_quality_alert
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.living_room_air_quality_fan_boost
+          - action: fan.turn_on
+            target:
+              entity_id: fan.dining_room_fan
+          - action: notify.notify
+            data:
+              title: "🚨 Air Quality Severe: Living Room"
+              message: "Living Room air quality dropped below 40! Dining Room Fan turned ON to circulate air."
+      - conditions:
+          - condition: trigger
+            id:
               - office_bad
         sequence:
           - action: input_boolean.turn_on
@@ -93,6 +144,24 @@ actions:
       - conditions:
           - condition: trigger
             id:
+              - office_severe
+        sequence:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.office_air_quality_alert
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.office_air_quality_fan_boost
+          - action: fan.turn_on
+            target:
+              entity_id: fan.office_office_ceiling_fan_with_lights
+          - action: notify.notify
+            data:
+              title: "🚨 Air Quality Severe: Office"
+              message: "Office air quality dropped below 40! Office Fan turned ON to circulate air."
+      - conditions:
+          - condition: trigger
+            id:
               - bedroom_good
           - condition: state
             entity_id: input_boolean.bedroom_air_quality_alert
@@ -101,6 +170,17 @@ actions:
           - action: input_boolean.turn_off
             target:
               entity_id: input_boolean.bedroom_air_quality_alert
+          - if:
+              - condition: state
+                entity_id: input_boolean.bedroom_air_quality_fan_boost
+                state: "on"
+            then:
+              - action: fan.turn_off
+                target:
+                  entity_id: fan.bedroom_fan_and_light
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.bedroom_air_quality_fan_boost
           - action: notify.notify
             data:
               title: "🍃 Air Quality Restored: Bedroom"
@@ -119,6 +199,17 @@ actions:
           - action: light.turn_off
             target:
               entity_id: light.shelf
+          - if:
+              - condition: state
+                entity_id: input_boolean.living_room_air_quality_fan_boost
+                state: "on"
+            then:
+              - action: fan.turn_off
+                target:
+                  entity_id: fan.dining_room_fan
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.living_room_air_quality_fan_boost
           - action: notify.notify
             data:
               title: "🍃 Air Quality Restored: Living Room"
@@ -137,6 +228,17 @@ actions:
           - action: light.turn_off
             target:
               entity_id: light.stalagmite
+          - if:
+              - condition: state
+                entity_id: input_boolean.office_air_quality_fan_boost
+                state: "on"
+            then:
+              - action: fan.turn_off
+                target:
+                  entity_id: fan.office_office_ceiling_fan_with_lights
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.office_air_quality_fan_boost
           - action: notify.notify
             data:
               title: "🍃 Air Quality Restored: Office"
