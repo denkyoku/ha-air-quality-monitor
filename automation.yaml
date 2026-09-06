@@ -1,0 +1,143 @@
+id: "1785271726793"
+alias: "Air Quality Status Monitor"
+description: "Monitors Awair air quality scores across Bedroom, Living Room, and Office, with stateful hysteresis notifications (<50 degraded, >70 restored) and visual shelf light cues."
+mode: queued
+max: 10
+triggers:
+  - trigger: numeric_state
+    entity_id:
+      - sensor.bedroom_awair_score
+    id: bedroom_bad
+    below: 50
+  - trigger: numeric_state
+    entity_id:
+      - sensor.bedroom_awair_score
+    id: bedroom_good
+    above: 70
+  - trigger: numeric_state
+    entity_id:
+      - sensor.awair_awair_score
+    id: living_room_bad
+    below: 50
+  - trigger: numeric_state
+    entity_id:
+      - sensor.awair_awair_score
+    id: living_room_good
+    above: 70
+  - trigger: numeric_state
+    entity_id:
+      - sensor.office_awair_score
+    id: office_bad
+    below: 50
+  - trigger: numeric_state
+    entity_id:
+      - sensor.office_awair_score
+    id: office_good
+    above: 70
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id:
+              - bedroom_bad
+        sequence:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.bedroom_air_quality_alert
+          - action: notify.notify
+            data:
+              title: "🌬️ Air Quality Alert: Bedroom"
+              message: "Bedroom air quality is degraded (Awair score dropped below 50)."
+      - conditions:
+          - condition: trigger
+            id:
+              - living_room_bad
+        sequence:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.living_room_air_quality_alert
+          - action: light.turn_on
+            target:
+              entity_id: light.shelf
+            data:
+              rgb_color:
+                - 255
+                - 0
+                - 0
+              brightness: 255
+          - action: notify.notify
+            data:
+              title: "🌬️ Air Quality Alert: Living Room"
+              message: "Living Room air quality is degraded (Awair score dropped below 50). Living Room Shelf turned RED."
+      - conditions:
+          - condition: trigger
+            id:
+              - office_bad
+        sequence:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.office_air_quality_alert
+          - action: light.turn_on
+            target:
+              entity_id: light.stalagmite
+            data:
+              rgb_color:
+                - 255
+                - 0
+                - 0
+              brightness: 255
+          - action: notify.notify
+            data:
+              title: "🌬️ Air Quality Alert: Office"
+              message: "Office air quality is degraded (Awair score dropped below 50). Office Shelf turned RED."
+      - conditions:
+          - condition: trigger
+            id:
+              - bedroom_good
+          - condition: state
+            entity_id: input_boolean.bedroom_air_quality_alert
+            state: "on"
+        sequence:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.bedroom_air_quality_alert
+          - action: notify.notify
+            data:
+              title: "🍃 Air Quality Restored: Bedroom"
+              message: "Bedroom air quality has recovered to healthy levels (Awair score above 70)."
+      - conditions:
+          - condition: trigger
+            id:
+              - living_room_good
+          - condition: state
+            entity_id: input_boolean.living_room_air_quality_alert
+            state: "on"
+        sequence:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.living_room_air_quality_alert
+          - action: light.turn_off
+            target:
+              entity_id: light.shelf
+          - action: notify.notify
+            data:
+              title: "🍃 Air Quality Restored: Living Room"
+              message: "Living Room air quality has recovered to healthy levels (Awair score above 70). Living Room Shelf turned off."
+      - conditions:
+          - condition: trigger
+            id:
+              - office_good
+          - condition: state
+            entity_id: input_boolean.office_air_quality_alert
+            state: "on"
+        sequence:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.office_air_quality_alert
+          - action: light.turn_off
+            target:
+              entity_id: light.stalagmite
+          - action: notify.notify
+            data:
+              title: "🍃 Air Quality Restored: Office"
+              message: "Office air quality has recovered to healthy levels (Awair score above 70). Office Shelf turned off."
